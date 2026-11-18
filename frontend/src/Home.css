@@ -1,0 +1,135 @@
+
+.home-container {
+  width: 100%;
+  min-height: 100vh;
+  background: #f8fafc;
+  color: #1e293b;
+}
+
+.hero-section {
+  text-align: center;
+  padding: 90px 20px;
+  background: linear-gradient(135deg, #1e3a8a, #2563eb);
+  color: white;
+}
+
+.hero-section h1 {
+  font-size: 42px;
+  margin-bottom: 15px;
+}
+
+.hero-section p {
+  font-size: 18px;
+  max-width: 650px;
+  margin: 0 auto 25px;
+  line-height: 1.6;
+}
+
+.explore-btn {
+  padding: 13px 28px;
+  background: white;
+  color: #1e40af;
+  border: none;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.explore-btn:hover {
+  background: #dbeafe;
+}
+
+.stores-section {
+  padding: 55px 7%;
+}
+
+.section-heading {
+  text-align: center;
+  margin-bottom: 35px;
+}
+
+.section-heading h2 {
+  font-size: 32px;
+  margin-bottom: 10px;
+}
+
+.section-heading p {
+  color: #64748b;
+}
+
+.store-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 25px;
+}
+
+.store-card {
+  background: white;
+  padding: 28px;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+  transition: transform 0.2s ease;
+}
+
+.store-card:hover {
+  transform: translateY(-5px);
+}
+
+.store-icon {
+  font-size: 35px;
+  margin-bottom: 15px;
+}
+
+.store-card h3 {
+  font-size: 22px;
+  margin-bottom: 8px;
+}
+
+.store-category {
+  color: #64748b;
+  margin-bottom: 20px;
+}
+
+.store-rating {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  margin-bottom: 20px;
+}
+
+.view-btn {
+  width: 100%;
+  padding: 11px;
+  border: none;
+  background: #2563eb;
+  color: white;
+  border-radius: 7px;
+  cursor: pointer;
+  font-size: 15px;
+}
+
+.view-btn:hover {
+  background: #1e40af;
+}
+
+@media (max-width: 900px) {
+  .store-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (max-width: 600px) {
+  .store-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero-section h1 {
+    font-size: 30px;
+  }
+
+  .stores-section {
+    padding: 35px 5%;
+  }
+}
