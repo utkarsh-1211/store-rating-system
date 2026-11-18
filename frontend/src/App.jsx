@@ -1,8 +1,5 @@
-
-import React from "react";
 import Navbar from "./components/Navbar";
 import Home from "./Home";
-import "./App.css";
 
 function App() {
   return (

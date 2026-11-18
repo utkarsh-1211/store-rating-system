@@ -1,97 +1,108 @@
 
-import React from "react";
+import React, { useEffect, useState } from "react";
 import "./Home.css";
 
-const stores = [
-  {
-    id: 1,
-    name: "Tech World",
-    category: "Electronics",
-    rating: 4.5,
-    reviews: 120,
-  },
-  {
-    id: 2,
-    name: "Fashion Hub",
-    category: "Clothing",
-    rating: 4.2,
-    reviews: 85,
-  },
-  {
-    id: 3,
-    name: "Fresh Mart",
-    category: "Grocery",
-    rating: 4.8,
-    reviews: 200,
-  },
-  {
-    id: 4,
-    name: "Book Corner",
-    category: "Books",
-    rating: 4.0,
-    reviews: 65,
-  },
-  {
-    id: 5,
-    name: "Home Decor",
-    category: "Furniture",
-    rating: 4.3,
-    reviews: 95,
-  },
-  {
-    id: 6,
-    name: "Sports Zone",
-    category: "Sports",
-    rating: 4.6,
-    reviews: 110,
-  },
-];
-
 function Home() {
-  return (
-    <div className="home-container">
-      <section className="hero-section">
-        <h1>Discover & Rate Your Favorite Stores</h1>
-        <p>
-          Explore stores, check ratings, and share your shopping
-          experiences with others.
-        </p>
+  const [stores, setStores] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-        <button className="explore-btn">Explore Stores</button>
+  useEffect(() => {
+    const fetchStores = async () => {
+      try {
+        const response = await fetch(
+          "http://localhost:5000/api/stores"
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch stores");
+        }
+
+        const data = await response.json();
+        setStores(data);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchStores();
+  }, []);
+
+  return (
+    <div className="home">
+
+      {/* Hero Section */}
+      <section className="hero">
+        <div className="hero-content">
+          <h1>Discover & Rate Your Favorite Stores</h1>
+
+          <p>
+            Explore stores, check ratings, and share your
+            shopping experiences with others.
+          </p>
+
+          <a href="#popular-stores" className="hero-button">
+            Explore Stores
+          </a>
+        </div>
       </section>
 
-      <section className="stores-section">
+      {/* Popular Stores Section */}
+      <section className="popular-stores" id="popular-stores">
+
         <div className="section-heading">
           <h2>Popular Stores</h2>
           <p>Discover the highest-rated stores</p>
         </div>
 
-        <div className="store-grid">
-          {stores.map((store) => (
-            <div className="store-card" key={store.id}>
-              <div className="store-icon">🏪</div>
+        {loading && (
+          <p className="loading">Loading stores...</p>
+        )}
 
-              <h3>{store.name}</h3>
+        {error && (
+          <p className="error">{error}</p>
+        )}
 
-              <p className="store-category">
-                {store.category}
-              </p>
+        {!loading && !error && stores.length === 0 && (
+          <p className="empty-message">
+            No stores available right now.
+          </p>
+        )}
 
-              <div className="store-rating">
-                <span>⭐ {store.rating}</span>
-                <span>{store.reviews} Reviews</span>
-              </div>
+        {!loading && !error && stores.length > 0 && (
+          <div className="store-grid">
 
-              <button className="view-btn">
-                View Details
-              </button>
-            </div>
-          ))}
-        </div>
+            {stores.map((store) => (
+              <article className="store-card" key={store.id}>
+
+                <div className="store-icon">🏬</div>
+
+                <h3>{store.name}</h3>
+
+                <p className="store-category">
+                  {store.category}
+                </p>
+
+                <p className="store-address">
+                  📍 {store.address}
+                </p>
+
+                <p className="store-description">
+                  {store.description}
+                </p>
+
+              </article>
+            ))}
+
+          </div>
+        )}
+
       </section>
+
     </div>
   );
 }
 
 export default Home;
-
