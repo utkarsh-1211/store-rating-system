@@ -1,5 +1,3 @@
-
-
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
@@ -216,11 +214,62 @@ const loginUser = async (req, res) => {
 
 
 // =====================================
-// EXPORT BOTH FUNCTIONS
+// GET CURRENT USER PROFILE (PROTECTED)
+// =====================================
+
+const getCurrentUser = (req, res) => {
+    try {
+        // 1. Ensure middleware attached the verified user ID
+        if (!req.user || !req.user.id) {
+            return res.status(401).json({
+                message: "Unauthorized access"
+            });
+        }
+
+        // 2. Fetch safe user fields from MySQL (never select password_hash)
+        db.query(
+            "SELECT id, name, email, role FROM users WHERE id = ?",
+            [req.user.id],
+            (err, results) => {
+                if (err) {
+                    return res.status(500).json({
+                        message: "Database error"
+                    });
+                }
+
+                if (results.length === 0) {
+                    return res.status(404).json({
+                        message: "User not found"
+                    });
+                }
+
+                const user = results[0];
+
+                return res.status(200).json({
+                    message: "User profile fetched successfully",
+                    user: {
+                        id: user.id,
+                        name: user.name,
+                        email: user.email,
+                        role: user.role
+                    }
+                });
+            }
+        );
+    } catch (error) {
+        return res.status(500).json({
+            message: "Internal server error"
+        });
+    }
+};
+
+
+// =====================================
+// EXPORT CONTROLLER FUNCTIONS
 // =====================================
 
 module.exports = {
     registerUser,
-    loginUser
+    loginUser,
+    getCurrentUser
 };
-
