@@ -1,173 +1,328 @@
-import { useState, useEffect, useMemo } from "react";
-import { Link } from "react-router-dom";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { useAuth } from "./context/AuthContext";
 import "./Home.css";
 
 const API_BASE_URL = "http://localhost:5000";
 
 function Home() {
+  const { user, token } = useAuth();
+  const navigate = useNavigate();
+
   const [stores, setStores] = useState([]);
+  const [userRatingsMap, setUserRatingsMap] = useState({});
+  const [draftRatings, setDraftRatings] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [statusMsg, setStatusMsg] = useState({ storeId: null, type: "", text: "" });
+  const [savingStoreId, setSavingStoreId] = useState(null);
 
-  // Search, Filter & Sort state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [selectedCategory, setSelectedCategory] = useState("ALL");
-  const [sortBy, setSortBy] = useState("highest");
+  // Search & Sort state
+  const [nameSearch, setNameSearch] = useState("");
+  const [addressSearch, setAddressSearch] = useState("");
+  const [sortConfig, setSortConfig] = useState({ key: "name", direction: "ASC" });
+
+  const fetchData = useCallback(async () => {
+    try {
+      setError("");
+      const storesRes = await fetch(`${API_BASE_URL}/api/stores`);
+      if (!storesRes.ok) {
+        throw new Error("Failed to load stores.");
+      }
+      const storesData = await storesRes.json();
+      const storeList = Array.isArray(storesData) ? storesData : storesData.stores || [];
+      setStores(storeList);
+
+      if (token) {
+        const myRatingsRes = await fetch(`${API_BASE_URL}/api/ratings/my-ratings`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        if (myRatingsRes.ok) {
+          const myRatingsData = await myRatingsRes.json();
+          const ratingsList = myRatingsData.ratings || [];
+          const map = {};
+          const drafts = {};
+          ratingsList.forEach((r) => {
+            map[r.store_id] = { id: r.id, rating: r.rating, review: r.review || "" };
+            drafts[r.store_id] = r.rating;
+          });
+          setUserRatingsMap(map);
+          setDraftRatings(drafts);
+        }
+      } else {
+        setUserRatingsMap({});
+        setDraftRatings({});
+      }
+    } catch (err) {
+      setError("Unable to load stores. Make sure the backend server is running.");
+    } finally {
+      setLoading(false);
+    }
+  }, [token]);
 
   useEffect(() => {
-    const fetchStores = async () => {
-      try {
-        setError("");
-        const response = await fetch(`${API_BASE_URL}/api/stores`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch stores");
-        }
-        const data = await response.json();
-        setStores(data);
-      } catch (err) {
-        setError("Unable to load stores. Make sure the backend server is running.");
-      } finally {
-        setLoading(false);
-      }
-    };
+    fetchData();
+  }, [fetchData]);
 
-    fetchStores();
-  }, []);
+  const handleSort = (key) => {
+    setSortConfig((prev) => ({
+      key,
+      direction: prev.key === key && prev.direction === "ASC" ? "DESC" : "ASC"
+    }));
+  };
 
-  // Build unique category dropdown list from database stores
-  const categories = useMemo(() => {
-    const unique = new Set(
-      stores.map((store) => store.category).filter(Boolean)
-    );
-    return ["ALL", ...Array.from(unique)];
-  }, [stores]);
+  const renderSortIcon = (key) => {
+    if (sortConfig.key !== key) return " ↕";
+    return sortConfig.direction === "ASC" ? " ↑" : " ↓";
+  };
 
-  // Apply search, category filter, and sorting
-  const filteredStores = useMemo(() => {
-    const query = searchQuery.trim().toLowerCase();
+  const handleRatingSubmit = async (storeId) => {
+    if (!token) {
+      navigate("/login");
+      return;
+    }
 
-    return stores
-      .filter((store) => {
-        const matchesCategory =
-          selectedCategory === "ALL" || store.category === selectedCategory;
-
-        const matchesSearch =
-          !query ||
-          store.name?.toLowerCase().includes(query) ||
-          store.address?.toLowerCase().includes(query) ||
-          store.category?.toLowerCase().includes(query);
-
-        return matchesCategory && matchesSearch;
-      })
-      .sort((a, b) => {
-        if (sortBy === "highest") {
-          return Number(b.average_rating || 0) - Number(a.average_rating || 0);
-        }
-        if (sortBy === "most_reviewed") {
-          return Number(b.total_ratings || 0) - Number(a.total_ratings || 0);
-        }
-        if (sortBy === "name_asc") {
-          return (a.name || "").localeCompare(b.name || "");
-        }
-        return 0;
+    const selectedRating = Number(draftRatings[storeId]);
+    if (!selectedRating || selectedRating < 1 || selectedRating > 5) {
+      setStatusMsg({
+        storeId,
+        type: "error",
+        text: "Select a rating (1–5) first."
       });
-  }, [stores, searchQuery, selectedCategory, sortBy]);
+      return;
+    }
+
+    setSavingStoreId(storeId);
+    setStatusMsg({ storeId: null, type: "", text: "" });
+
+    try {
+      const existing = userRatingsMap[storeId];
+      const res = await fetch(`${API_BASE_URL}/api/ratings`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          store_id: storeId,
+          rating: selectedRating,
+          review: existing?.review || ""
+        })
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        setStatusMsg({
+          storeId,
+          type: "error",
+          text: data.message || "Failed to save rating."
+        });
+        return;
+      }
+
+      setStatusMsg({
+        storeId,
+        type: "success",
+        text: existing ? "Rating updated!" : "Rating submitted!"
+      });
+      await fetchData();
+    } catch (err) {
+      setStatusMsg({
+        storeId,
+        type: "error",
+        text: "Server error while saving rating."
+      });
+    } finally {
+      setSavingStoreId(null);
+    }
+  };
+
+  const filteredAndSortedStores = useMemo(() => {
+    const filtered = stores.filter((store) => {
+      const matchesName = (store.name || "")
+        .toLowerCase()
+        .includes(nameSearch.trim().toLowerCase());
+      const matchesAddress = (store.address || "")
+        .toLowerCase()
+        .includes(addressSearch.trim().toLowerCase());
+      return matchesName && matchesAddress;
+    });
+
+    return [...filtered].sort((a, b) => {
+      const dir = sortConfig.direction === "ASC" ? 1 : -1;
+      if (sortConfig.key === "rating") {
+        return (Number(a.average_rating || 0) - Number(b.average_rating || 0)) * dir;
+      }
+      const valA = String(a[sortConfig.key] || "").toLowerCase();
+      const valB = String(b[sortConfig.key] || "").toLowerCase();
+      return valA.localeCompare(valB) * dir;
+    });
+  }, [stores, nameSearch, addressSearch, sortConfig]);
 
   return (
     <div className="home-container">
       <div className="home-hero">
         <h1>Discover & Rate Local Stores</h1>
-        <p>Find top-rated shops, read honest reviews, and share your experience.</p>
+        <p>
+          Browse registered stores, check overall ratings, and submit or update your
+          1–5 star rating.
+        </p>
+        {user?.role === "ADMIN" && (
+          <Link to="/admin" className="home-role-shortcut">
+            Go to Admin Dashboard →
+          </Link>
+        )}
+        {user?.role === "STORE_OWNER" && (
+          <Link to="/owner" className="home-role-shortcut">
+            Go to Store Owner Dashboard →
+          </Link>
+        )}
       </div>
 
-      {/* Search, Filter & Sort Bar */}
-      <div className="home-controls">
+      {/* Search Bar */}
+      <div className="home-search-card">
         <input
           type="text"
-          className="home-search-input"
-          placeholder="Search stores by name, category, or address..."
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
+          placeholder="Search by Store Name..."
+          value={nameSearch}
+          onChange={(e) => setNameSearch(e.target.value)}
         />
-
-        <select
-          className="home-select"
-          value={selectedCategory}
-          onChange={(e) => setSelectedCategory(e.target.value)}
+        <input
+          type="text"
+          placeholder="Search by Address..."
+          value={addressSearch}
+          onChange={(e) => setAddressSearch(e.target.value)}
+        />
+        <button
+          type="button"
+          className="home-reset-btn"
+          onClick={() => {
+            setNameSearch("");
+            setAddressSearch("");
+          }}
         >
-          {categories.map((cat) => (
-            <option key={cat} value={cat}>
-              {cat === "ALL" ? "All Categories" : cat}
-            </option>
-          ))}
-        </select>
-
-        <select
-          className="home-select"
-          value={sortBy}
-          onChange={(e) => setSortBy(e.target.value)}
-        >
-          <option value="highest">Highest Rated</option>
-          <option value="most_reviewed">Most Reviewed</option>
-          <option value="name_asc">Name (A–Z)</option>
-        </select>
+          Reset
+        </button>
       </div>
 
-      <div className="stores-section">
+      {error && <div className="home-error">{error}</div>}
+
+      {/* Stores Table */}
+      <div className="home-table-card">
         {loading ? (
-          <div className="home-status-msg">Loading stores...</div>
-        ) : error ? (
-          <div className="home-error-msg">{error}</div>
-        ) : filteredStores.length === 0 ? (
-          <div className="home-status-msg">
-            No stores matched your search or filter.
-          </div>
+          <p className="home-empty">Loading stores...</p>
         ) : (
-          <>
-            <p className="stores-count">
-              Showing {filteredStores.length}{" "}
-              {filteredStores.length === 1 ? "store" : "stores"}
-            </p>
+          <div className="home-table-wrapper">
+            <table className="home-table">
+              <thead>
+                <tr>
+                  <th onClick={() => handleSort("name")}>
+                    Store Name{renderSortIcon("name")}
+                  </th>
+                  <th onClick={() => handleSort("address")}>
+                    Address{renderSortIcon("address")}
+                  </th>
+                  <th onClick={() => handleSort("rating")}>
+                    Overall Rating{renderSortIcon("rating")}
+                  </th>
+                  <th>Your Submitted Rating</th>
+                  <th>Submit / Modify Rating</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredAndSortedStores.length === 0 ? (
+                  <tr>
+                    <td colSpan="5" className="home-empty">
+                      No matching stores found.
+                    </td>
+                  </tr>
+                ) : (
+                  filteredAndSortedStores.map((store) => {
+                    const userRating = userRatingsMap[store.id]?.rating || null;
+                    const draft = draftRatings[store.id] || "";
+                    const isSaving = savingStoreId === store.id;
 
-            <div className="stores-grid">
-              {filteredStores.map((store) => (
-                <Link
-                  to={`/stores/${store.id}`}
-                  key={store.id}
-                  className="store-card"
-                >
-                  <div>
-                    <div className="store-card-top">
-                      <span className="store-card-category">
-                        {store.category || "General"}
-                      </span>
-                      <span className="store-card-rating">
-                        ★ {Number(store.average_rating || 0).toFixed(1)}
-                      </span>
-                    </div>
-
-                    <h2>{store.name}</h2>
-
-                    {store.address && (
-                      <p className="store-card-address">📍 {store.address}</p>
-                    )}
-
-                    {store.description && (
-                      <p className="store-card-desc">{store.description}</p>
-                    )}
-                  </div>
-
-                  <div className="store-card-footer">
-                    <span className="store-card-reviews">
-                      {store.total_ratings || 0}{" "}
-                      {store.total_ratings === 1 ? "review" : "reviews"}
-                    </span>
-                    <span className="store-card-cta">View & Rate →</span>
-                  </div>
-                </Link>
-              ))}
-            </div>
-          </>
+                    return (
+                      <tr key={store.id}>
+                        <td>
+                          <Link to={`/stores/${store.id}`} className="store-name-link">
+                            {store.name}
+                          </Link>
+                          {store.category && (
+                            <span className="store-cat-tag">{store.category}</span>
+                          )}
+                        </td>
+                        <td>{store.address || "—"}</td>
+                        <td>
+                          <span className="overall-rating-pill">
+                            ★ {Number(store.average_rating || 0).toFixed(1)}
+                          </span>
+                          <span className="rating-count">
+                            {" "}
+                            ({store.total_ratings || 0})
+                          </span>
+                        </td>
+                        <td>
+                          {userRating ? (
+                            <span className="user-rating-stars">
+                              {"★".repeat(userRating)}
+                              {"☆".repeat(5 - userRating)} ({userRating}/5)
+                            </span>
+                          ) : (
+                            <span className="not-rated-text">Not rated yet</span>
+                          )}
+                        </td>
+                        <td>
+                          {token ? (
+                            <div className="rate-control-wrap">
+                              <select
+                                className="rate-select"
+                                value={draft}
+                                onChange={(e) =>
+                                  setDraftRatings((prev) => ({
+                                    ...prev,
+                                    [store.id]: Number(e.target.value)
+                                  }))
+                                }
+                              >
+                                <option value="">Rate (1–5)</option>
+                                <option value="1">1 ★</option>
+                                <option value="2">2 ★★</option>
+                                <option value="3">3 ★★★</option>
+                                <option value="4">4 ★★★★</option>
+                                <option value="5">5 ★★★★★</option>
+                              </select>
+                              <button
+                                type="button"
+                                className="rate-submit-btn"
+                                disabled={isSaving}
+                                onClick={() => handleRatingSubmit(store.id)}
+                              >
+                                {isSaving
+                                  ? "Saving..."
+                                  : userRating
+                                  ? "Modify Rating"
+                                  : "Submit Rating"}
+                              </button>
+                              {statusMsg.storeId === store.id && (
+                                <span className={`rate-feedback ${statusMsg.type}`}>
+                                  {statusMsg.text}
+                                </span>
+                              )}
+                            </div>
+                          ) : (
+                            <Link to="/login" className="login-to-rate-link">
+                              Login to Rate
+                            </Link>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })
+                )}
+              </tbody>
+            </table>
+          </div>
         )}
       </div>
     </div>

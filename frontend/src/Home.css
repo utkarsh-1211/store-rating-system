@@ -1,187 +1,216 @@
 .home-container {
-  min-height: calc(100vh - 70px);
-  background-color: #f4f6fb;
-  padding-bottom: 4rem;
+  max-width: 1140px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
 }
 
 .home-hero {
-  background: linear-gradient(135deg, #263f91, #355bd5);
-  color: #ffffff;
   text-align: center;
-  padding: 3rem 1.5rem 2.5rem;
+  margin-bottom: 1.75rem;
 }
 
 .home-hero h1 {
-  margin: 0 0 0.5rem;
-  font-size: 2.2rem;
+  margin: 0 0 0.4rem;
+  color: #111827;
+  font-size: 2rem;
 }
 
 .home-hero p {
-  margin: 0;
-  font-size: 1rem;
-  opacity: 0.92;
+  margin: 0 auto 1rem;
+  color: #6b7280;
+  max-width: 600px;
 }
 
-.home-controls {
-  max-width: 1100px;
-  margin: -1.5rem auto 2rem;
-  padding: 1rem 1.25rem;
+.home-role-shortcut {
+  display: inline-block;
+  background: #eef2ff;
+  color: #3b5bdb;
+  font-weight: 600;
+  padding: 0.55rem 1.1rem;
+  border-radius: 999px;
+  text-decoration: none;
+  font-size: 0.9rem;
+}
+
+.home-search-card {
   background: #ffffff;
+  padding: 1rem 1.25rem;
   border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(38, 63, 145, 0.1);
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
   display: flex;
   flex-wrap: wrap;
-  gap: 0.85rem;
-  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
 }
 
-.home-search-input {
-  flex: 2;
-  min-width: 220px;
-  padding: 0.7rem 1rem;
-  border: 1px solid #d1d5db;
-  border-radius: 8px;
-  font-size: 0.95rem;
-  outline: none;
-}
-
-.home-search-input:focus {
-  border-color: #355bd5;
-}
-
-.home-select {
+.home-search-card input {
   flex: 1;
-  min-width: 160px;
+  min-width: 200px;
   padding: 0.7rem 0.9rem;
   border: 1px solid #d1d5db;
   border-radius: 8px;
-  font-size: 0.95rem;
-  background-color: #ffffff;
-  color: #1f2937;
-  cursor: pointer;
-  outline: none;
+  font-size: 0.94rem;
 }
 
-.home-select:focus {
-  border-color: #355bd5;
-}
-
-.stores-section {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 0 1rem;
-}
-
-.stores-count {
-  margin: 0 0 1rem;
-  color: #4b5563;
-  font-size: 0.95rem;
-  font-weight: 500;
-}
-
-.stores-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-  gap: 1.25rem;
-}
-
-.store-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: space-between;
-  background: #ffffff;
-  border-radius: 12px;
-  padding: 1.4rem;
-  text-decoration: none;
-  color: inherit;
-  box-shadow: 0 4px 14px rgba(38, 63, 145, 0.08);
-  transition: transform 0.2s, box-shadow 0.2s;
-}
-
-.store-card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 10px 24px rgba(38, 63, 145, 0.14);
-}
-
-.store-card-top {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.75rem;
-}
-
-.store-card-category {
-  padding: 0.25rem 0.7rem;
-  border-radius: 999px;
-  background-color: #e8eeff;
-  color: #263f91;
-  font-size: 0.78rem;
+.home-reset-btn {
+  padding: 0.7rem 1.2rem;
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
   font-weight: 600;
+  cursor: pointer;
 }
 
-.store-card-rating {
-  font-size: 0.9rem;
+.home-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.home-table-card {
+  background: #ffffff;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  padding: 1rem 1.25rem;
+}
+
+.home-table-wrapper {
+  overflow-x: auto;
+}
+
+.home-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.93rem;
+}
+
+.home-table th,
+.home-table td {
+  padding: 0.9rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.home-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.home-table th:hover {
+  background: #eef2ff;
+}
+
+.store-name-link {
+  color: #1d4ed8;
   font-weight: 700;
-  color: #b45309;
-  background-color: #fef3c7;
+  text-decoration: none;
+  display: block;
+}
+
+.store-name-link:hover {
+  text-decoration: underline;
+}
+
+.store-cat-tag {
+  display: inline-block;
+  margin-top: 0.2rem;
+  font-size: 0.75rem;
+  color: #6b7280;
+  background: #f3f4f6;
+  padding: 0.15rem 0.5rem;
+  border-radius: 999px;
+}
+
+.overall-rating-pill {
+  background: #fef3c7;
+  color: #92400e;
+  font-weight: 700;
   padding: 0.25rem 0.6rem;
   border-radius: 999px;
   white-space: nowrap;
 }
 
-.store-card h2 {
-  margin: 0 0 0.4rem;
-  font-size: 1.25rem;
-  color: #1f2937;
-}
-
-.store-card-address {
-  margin: 0 0 0.6rem;
-  font-size: 0.88rem;
+.rating-count {
   color: #6b7280;
-}
-
-.store-card-desc {
-  margin: 0 0 1rem;
-  font-size: 0.92rem;
-  color: #4b5563;
-  line-height: 1.45;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
-  overflow: hidden;
-}
-
-.store-card-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding-top: 0.75rem;
-  border-top: 1px solid #f3f4f6;
   font-size: 0.85rem;
 }
 
-.store-card-reviews {
-  color: #6b7280;
+.user-rating-stars {
+  color: #f59e0b;
+  font-weight: 600;
+  white-space: nowrap;
 }
 
-.store-card-cta {
-  color: #355bd5;
+.not-rated-text {
+  color: #9ca3af;
+  font-style: italic;
+}
+
+.rate-control-wrap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.rate-select {
+  padding: 0.45rem 0.6rem;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  font-size: 0.88rem;
+}
+
+.rate-submit-btn {
+  padding: 0.48rem 0.85rem;
+  background: #3b5bdb;
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rate-submit-btn:hover {
+  background: #2f49b8;
+}
+
+.rate-submit-btn:disabled {
+  opacity: 0.65;
+  cursor: not-allowed;
+}
+
+.rate-feedback {
+  font-size: 0.8rem;
   font-weight: 600;
 }
 
-.home-status-msg {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #4b5563;
-  font-size: 1rem;
+.rate-feedback.success {
+  color: #047857;
 }
 
-.home-error-msg {
-  text-align: center;
-  padding: 1rem;
-  border-radius: 8px;
-  background-color: #fee2e2;
+.rate-feedback.error {
   color: #b91c1c;
 }
+
+.login-to-rate-link {
+  color: #3b5bdb;
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.home-empty {
+  text-align: center;
+  color: #6b7280;
+  padding: 2rem !important;
+}   
