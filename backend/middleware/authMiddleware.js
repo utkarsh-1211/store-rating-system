@@ -1,55 +1,40 @@
 const jwt = require("jsonwebtoken");
 
-// Authentication Middleware
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
+
 const authenticateToken = (req, res, next) => {
-    try {
-        // 1. Check that JWT_SECRET is configured on the server
-        if (!process.env.JWT_SECRET) {
-            console.error("JWT_SECRET is missing in environment variables.");
-            return res.status(500).json({
-                message: "Server authentication configuration error."
-            });
-        }
+  const authHeader = req.headers["authorization"];
+  const token = authHeader && authHeader.split(" ")[1];
 
-        // 2. Get Authorization header
-        const authHeader = req.headers.authorization;
+  if (!token) {
+    return res.status(401).json({ message: "Access denied. No token provided." });
+  }
 
-        // 3. Check whether header exists and uses Bearer format
-        if (!authHeader || !authHeader.startsWith("Bearer ")) {
-            return res.status(401).json({
-                message: "Access denied. Token is required."
-            });
-        }
-
-        // 4. Safely extract token and reject malformed headers
-        const parts = authHeader.split(" ");
-        if (parts.length !== 2 || !parts[1].trim()) {
-            return res.status(401).json({
-                message: "Access denied. Invalid authorization header format."
-            });
-        }
-
-        const token = parts[1].trim();
-
-        // 5. Verify JWT token
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-
-        // 6. Store decoded user information
-        req.user = decoded;
-
-        // 7. Allow request to continue
-        next();
-    } catch (error) {
-        if (error.name === "TokenExpiredError") {
-            return res.status(401).json({
-                message: "Token has expired. Please login again."
-            });
-        }
-
-        return res.status(401).json({
-            message: "Invalid authentication token."
-        });
-    }
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(403).json({ message: "Invalid or expired token." });
+  }
 };
 
-module.exports = { authenticateToken };
+const requireAdmin = (req, res, next) => {
+  if (!req.user || req.user.role !== "ADMIN") {
+    return res.status(403).json({ message: "Access denied. Admin privileges required." });
+  }
+  next();
+};
+
+const requireStoreOwner = (req, res, next) => {
+  if (!req.user || req.user.role !== "STORE_OWNER") {
+    return res.status(403).json({ message: "Access denied. Store Owner privileges required." });
+  }
+  next();
+};
+
+module.exports = {
+  authenticateToken,
+  requireAdmin,
+  requireStoreOwner
+};
