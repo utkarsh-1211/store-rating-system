@@ -1,140 +1,154 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import "./Auth.css";
+import {
+  validateName,
+  validateEmail,
+  validateAddress,
+  validatePassword
+} from "../utils/validators";
+import "./Register.css";
+
+const API_BASE_URL = "http://localhost:5000";
 
 function Register() {
-  const [name, setName] = useState("");
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [error, setError] = useState("");
-  const [success, setSuccess] = useState("");
+  const navigate = useNavigate();
+
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    address: "",
+    password: ""
+  });
+  const [errors, setErrors] = useState({});
+  const [serverError, setServerError] = useState("");
+  const [successMsg, setSuccessMsg] = useState("");
   const [submitting, setSubmitting] = useState(false);
 
-  const navigate = useNavigate();
+  const handleChange = (e) => {
+    const { name, value } = e.target;
+    setFormData((prev) => ({ ...prev, [name]: value }));
+    setErrors((prev) => ({ ...prev, [name]: "" }));
+    setServerError("");
+  };
+
+  const validateForm = () => {
+    const newErrors = {
+      name: validateName(formData.name),
+      email: validateEmail(formData.email),
+      address: validateAddress(formData.address),
+      password: validatePassword(formData.password)
+    };
+
+    const filtered = Object.fromEntries(
+      Object.entries(newErrors).filter(([, msg]) => msg !== "")
+    );
+    setErrors(filtered);
+    return Object.keys(filtered).length === 0;
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError("");
-    setSuccess("");
+    setServerError("");
+    setSuccessMsg("");
 
-    if (!name.trim() || !email.trim() || !password || !confirmPassword) {
-      setError("All fields are required.");
-      return;
-    }
-
-    if (password.length < 8) {
-      setError("Password must be at least 8 characters.");
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError("Passwords do not match.");
-      return;
-    }
+    if (!validateForm()) return;
 
     setSubmitting(true);
-
     try {
-      const response = await fetch("http://localhost:5000/api/auth/register", {
+      const response = await fetch(`${API_BASE_URL}/api/auth/register`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          name: name.trim(),
-          email: email.trim(),
-          password,
-        }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(formData)
       });
 
       const data = await response.json();
 
       if (!response.ok) {
-        setError(data.message || "Registration failed. Please try again.");
+        setServerError(data.message || "Registration failed.");
         return;
       }
 
-      setSuccess("Account created successfully! Redirecting to login...");
-
-      setTimeout(() => {
-        navigate("/login");
-      }, 1500);
+      setSuccessMsg("Account created! Redirecting to login...");
+      setTimeout(() => navigate("/login"), 1200);
     } catch (err) {
-      setError("Unable to connect to the server. Make sure the backend is running.");
+      setServerError("Unable to connect to the server.");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="auth-container">
-      <div className="auth-card">
-        <h2 className="auth-title">Create Account</h2>
-        <p className="auth-subtitle">Join StoreRate to rate and review stores</p>
+    <div className="register-container">
+      <div className="register-card">
+        <h2>Create Account</h2>
+        <p className="register-subtitle">Sign up to rate and review local stores</p>
 
-        {error && <div className="auth-error">{error}</div>}
-        {success && <div className="auth-success">{success}</div>}
+        {serverError && <div className="register-alert error">{serverError}</div>}
+        {successMsg && <div className="register-alert success">{successMsg}</div>}
 
-        <form className="auth-form" onSubmit={handleSubmit}>
-          <div className="auth-field">
-            <label htmlFor="name">Full Name</label>
+        <form onSubmit={handleSubmit} noValidate>
+          <div className="register-group">
+            <label htmlFor="name">
+              Full Name <span className="char-count">({formData.name.trim().length}/60)</span>
+            </label>
             <input
               id="name"
+              name="name"
               type="text"
-              placeholder="Enter your full name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              required
+              placeholder="Enter full name (20–60 characters)"
+              value={formData.name}
+              onChange={handleChange}
             />
+            {errors.name && <span className="field-error">{errors.name}</span>}
           </div>
 
-          <div className="auth-field">
+          <div className="register-group">
             <label htmlFor="email">Email</label>
             <input
               id="email"
+              name="email"
               type="email"
               placeholder="you@example.com"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
+              value={formData.email}
+              onChange={handleChange}
             />
+            {errors.email && <span className="field-error">{errors.email}</span>}
           </div>
 
-          <div className="auth-field">
+          <div className="register-group">
+            <label htmlFor="address">
+              Address <span className="char-count">({formData.address.trim().length}/400)</span>
+            </label>
+            <textarea
+              id="address"
+              name="address"
+              rows="3"
+              placeholder="Enter your full address (max 400 characters)"
+              value={formData.address}
+              onChange={handleChange}
+            />
+            {errors.address && <span className="field-error">{errors.address}</span>}
+          </div>
+
+          <div className="register-group">
             <label htmlFor="password">Password</label>
             <input
               id="password"
+              name="password"
               type="password"
-              placeholder="At least 8 characters"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
+              placeholder="8–16 chars, 1 uppercase, 1 special char"
+              value={formData.password}
+              onChange={handleChange}
             />
+            {errors.password && <span className="field-error">{errors.password}</span>}
           </div>
 
-          <div className="auth-field">
-            <label htmlFor="confirmPassword">Confirm Password</label>
-            <input
-              id="confirmPassword"
-              type="password"
-              placeholder="Re-enter your password"
-              value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
-              required
-            />
-          </div>
-
-          <button
-            type="submit"
-            className="auth-submit-btn"
-            disabled={submitting}
-          >
+          <button type="submit" className="register-btn" disabled={submitting}>
             {submitting ? "Creating account..." : "Register"}
           </button>
         </form>
 
-        <p className="auth-footer">
+        <p className="register-footer">
           Already have an account? <Link to="/login">Login</Link>
         </p>
       </div>

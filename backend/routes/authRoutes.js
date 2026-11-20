@@ -1,31 +1,16 @@
 const express = require("express");
-
 const router = express.Router();
-
-// Import controller functions
 const {
-    registerUser,
-    loginUser,
-    getCurrentUser
+  register,
+  login,
+  getMe,
+  updatePassword
 } = require("../controllers/authController");
-
-// Import authentication middleware
 const { authenticateToken } = require("../middleware/authMiddleware");
 
-// Registration API
-router.post("/register", registerUser);
-
-// Login API
-router.post("/login", loginUser);
-
-// Protected Current User Profile API
-router.get("/me", authenticateToken, getCurrentUser);
-
-// Test API
-router.get("/test", (req, res) => {
-    res.json({
-        message: "Auth routes working successfully!"
-    });
-});
+router.post("/register", register);
+router.post("/login", login);
+router.get("/me", authenticateToken, getMe);
+router.put("/update-password", authenticateToken, updatePassword);
 
 module.exports = router;

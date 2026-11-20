@@ -1,275 +1,197 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const db = require("../db");
+const {
+  validateName,
+  validateEmail,
+  validateAddress,
+  validatePassword
+} = require("../utils/validators");
+
+const JWT_SECRET = process.env.JWT_SECRET || "default_secret_key";
 
 // =====================================
-// REGISTER USER
+// REGISTER NORMAL USER
 // =====================================
+const register = async (req, res) => {
+  const { name, email, address, password } = req.body;
 
-const registerUser = async (req, res) => {
-    try {
-        // 1. Get data from request body
-        const { name, email, password } = req.body;
+  const nameErr = validateName(name);
+  if (nameErr) return res.status(400).json({ message: nameErr });
 
-        // 2. Validate input
-        if (!name || !email || !password) {
-            return res.status(400).json({
-                message: "All fields are required"
-            });
-        }
+  const emailErr = validateEmail(email);
+  if (emailErr) return res.status(400).json({ message: emailErr });
 
-        if (password.length < 8) {
-            return res.status(400).json({
-                message: "Password must be at least 8 characters"
-            });
-        }
+  const addressErr = validateAddress(address);
+  if (addressErr) return res.status(400).json({ message: addressErr });
 
-        const normalizedEmail = email.trim().toLowerCase();
-        const normalizedName = name.trim();
+  const passwordErr = validatePassword(password);
+  if (passwordErr) return res.status(400).json({ message: passwordErr });
 
-        if (!normalizedName || !normalizedEmail) {
-            return res.status(400).json({
-                message: "Name and email cannot be empty"
-            });
-        }
+  const cleanName = name.trim();
+  const cleanEmail = email.trim().toLowerCase();
+  const cleanAddress = address.trim();
 
-        // 3. Check whether email already exists
-        db.query(
-            "SELECT id FROM users WHERE email = ?",
-            [normalizedEmail],
-            async (err, results) => {
+  db.query("SELECT id FROM users WHERE email = ?", [cleanEmail], async (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error" });
 
-                if (err) {
-                    return res.status(500).json({
-                        message: "Database error"
-                    });
-                }
-
-                if (results.length > 0) {
-                    return res.status(409).json({
-                        message: "Email already registered"
-                    });
-                }
-
-                try {
-                    // 4. Hash password
-                    const hashedPassword = await bcrypt.hash(
-                        password,
-                        10
-                    );
-
-                    // 5. Insert user into MySQL
-                    db.query(
-                        `INSERT INTO users
-                        (name, email, password_hash)
-                        VALUES (?, ?, ?)`,
-                        [
-                            normalizedName,
-                            normalizedEmail,
-                            hashedPassword
-                        ],
-                        (insertErr, result) => {
-
-                            if (insertErr) {
-                                if (insertErr.code === "ER_DUP_ENTRY") {
-                                    return res.status(409).json({
-                                        message: "Email already registered"
-                                    });
-                                }
-
-                                return res.status(500).json({
-                                    message: "Registration failed"
-                                });
-                            }
-
-                            // 6. Send success response
-                            return res.status(201).json({
-                                message: "User registered successfully",
-                                user: {
-                                    id: result.insertId,
-                                    name: normalizedName,
-                                    email: normalizedEmail,
-                                    role: "USER"
-                                }
-                            });
-                        }
-                    );
-
-                } catch (hashError) {
-                    return res.status(500).json({
-                        message: "Password processing failed"
-                    });
-                }
-            }
-        );
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal server error"
-        });
+    if (results.length > 0) {
+      return res.status(409).json({ message: "Email is already registered" });
     }
+
+    try {
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      const insertSql = `
+        INSERT INTO users (name, email, address, password_hash, role)
+        VALUES (?, ?, ?, ?, 'USER')
+      `;
+
+      db.query(
+        insertSql,
+        [cleanName, cleanEmail, cleanAddress, hashedPassword],
+        (insertErr, result) => {
+          if (insertErr) {
+            return res.status(500).json({ message: "Failed to register user" });
+          }
+
+          return res.status(201).json({
+            message: "User registered successfully",
+            user: {
+              id: result.insertId,
+              name: cleanName,
+              email: cleanEmail,
+              address: cleanAddress,
+              role: "USER"
+            }
+          });
+        }
+      );
+    } catch (hashErr) {
+      return res.status(500).json({ message: "Error securing password" });
+    }
+  });
 };
 
-
 // =====================================
-// LOGIN USER
+// LOGIN (SINGLE LOGIN FOR ALL ROLES)
 // =====================================
+const login = (req, res) => {
+  const { email, password } = req.body;
 
-const loginUser = async (req, res) => {
-    try {
-        // 1. Get email and password
-        const { email, password } = req.body;
+  if (!email || !password) {
+    return res.status(400).json({ message: "Email and password are required" });
+  }
 
-        // 2. Validate input
-        if (!email || !password) {
-            return res.status(400).json({
-                message: "Email and password are required"
-            });
+  const cleanEmail = email.trim().toLowerCase();
+
+  db.query(
+    "SELECT id, name, email, address, password_hash, role FROM users WHERE email = ?",
+    [cleanEmail],
+    async (err, results) => {
+      if (err) return res.status(500).json({ message: "Database error" });
+
+      if (results.length === 0) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const user = results[0];
+      const isMatch = await bcrypt.compare(password, user.password_hash);
+
+      if (!isMatch) {
+        return res.status(401).json({ message: "Invalid email or password" });
+      }
+
+      const token = jwt.sign(
+        { id: user.id, email: user.email, role: user.role },
+        JWT_SECRET,
+        { expiresIn: "7d" }
+      );
+
+      return res.status(200).json({
+        message: "Login successful",
+        token,
+        user: {
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          address: user.address || "",
+          role: user.role
         }
-
-        const normalizedEmail = email.trim().toLowerCase();
-
-        // 3. Find user in database
-        db.query(
-            "SELECT * FROM users WHERE email = ?",
-            [normalizedEmail],
-            async (err, results) => {
-
-                if (err) {
-                    return res.status(500).json({
-                        message: "Database error"
-                    });
-                }
-
-                // 4. Check whether user exists
-                if (results.length === 0) {
-                    return res.status(404).json({
-                        message: "User not found"
-                    });
-                }
-
-                const user = results[0];
-
-                try {
-                    // 5. Compare entered password with hashed password
-                    const isMatch = await bcrypt.compare(
-                        password,
-                        user.password_hash
-                    );
-
-                    if (!isMatch) {
-                        return res.status(401).json({
-                            message: "Invalid email or password"
-                        });
-                    }
-
-                    // 6. Check JWT secret
-                    if (!process.env.JWT_SECRET) {
-                        return res.status(500).json({
-                            message: "JWT configuration error"
-                        });
-                    }
-
-                    // 7. Generate JWT token
-                    const token = jwt.sign(
-                        {
-                            id: user.id,
-                            email: user.email,
-                            role: user.role
-                        },
-                        process.env.JWT_SECRET,
-                        {
-                            expiresIn: "1d"
-                        }
-                    );
-
-                    // 8. Send successful login response
-                    return res.status(200).json({
-                        message: "Login successful",
-
-                        token: token,
-
-                        user: {
-                            id: user.id,
-                            name: user.name,
-                            email: user.email,
-                            role: user.role
-                        }
-                    });
-
-                } catch (error) {
-                    return res.status(500).json({
-                        message: "Login processing failed"
-                    });
-                }
-            }
-        );
-
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal server error"
-        });
+      });
     }
+  );
 };
 
-
 // =====================================
-// GET CURRENT USER PROFILE (PROTECTED)
+// GET LOGGED-IN USER PROFILE
 // =====================================
+const getMe = (req, res) => {
+  const sql = "SELECT id, name, email, address, role, created_at FROM users WHERE id = ?";
 
-const getCurrentUser = (req, res) => {
-    try {
-        // 1. Ensure middleware attached the verified user ID
-        if (!req.user || !req.user.id) {
-            return res.status(401).json({
-                message: "Unauthorized access"
-            });
-        }
+  db.query(sql, [req.user.id], (err, results) => {
+    if (err) return res.status(500).json({ message: "Database error" });
 
-        // 2. Fetch safe user fields from MySQL (never select password_hash)
-        db.query(
-            "SELECT id, name, email, role FROM users WHERE id = ?",
-            [req.user.id],
-            (err, results) => {
-                if (err) {
-                    return res.status(500).json({
-                        message: "Database error"
-                    });
-                }
-
-                if (results.length === 0) {
-                    return res.status(404).json({
-                        message: "User not found"
-                    });
-                }
-
-                const user = results[0];
-
-                return res.status(200).json({
-                    message: "User profile fetched successfully",
-                    user: {
-                        id: user.id,
-                        name: user.name,
-                        email: user.email,
-                        role: user.role
-                    }
-                });
-            }
-        );
-    } catch (error) {
-        return res.status(500).json({
-            message: "Internal server error"
-        });
+    if (results.length === 0) {
+      return res.status(404).json({ message: "User not found" });
     }
+
+    return res.status(200).json({ user: results[0] });
+  });
 };
 
+// =====================================
+// UPDATE PASSWORD (LOGGED-IN USERS)
+// =====================================
+const updatePassword = (req, res) => {
+  const { currentPassword, newPassword } = req.body;
 
-// =====================================
-// EXPORT CONTROLLER FUNCTIONS
-// =====================================
+  if (!currentPassword || !newPassword) {
+    return res
+      .status(400)
+      .json({ message: "Current password and new password are required." });
+  }
+
+  const passwordErr = validatePassword(newPassword);
+  if (passwordErr) return res.status(400).json({ message: passwordErr });
+
+  db.query(
+    "SELECT password_hash FROM users WHERE id = ?",
+    [req.user.id],
+    async (err, results) => {
+      if (err) return res.status(500).json({ message: "Database error" });
+
+      if (results.length === 0) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const isMatch = await bcrypt.compare(currentPassword, results[0].password_hash);
+      if (!isMatch) {
+        return res.status(401).json({ message: "Current password is incorrect." });
+      }
+
+      try {
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        db.query(
+          "UPDATE users SET password_hash = ? WHERE id = ?",
+          [hashedPassword, req.user.id],
+          (updateErr) => {
+            if (updateErr) {
+              return res.status(500).json({ message: "Failed to update password." });
+            }
+            return res.status(200).json({ message: "Password updated successfully!" });
+          }
+        );
+      } catch (hashErr) {
+        return res.status(500).json({ message: "Error securing new password." });
+      }
+    }
+  );
+};
 
 module.exports = {
-    registerUser,
-    loginUser,
-    getCurrentUser
+  register,
+  login,
+  getMe,
+  updatePassword
 };
