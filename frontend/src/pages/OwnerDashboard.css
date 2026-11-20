@@ -1,0 +1,162 @@
+.owner-container {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem 1.25rem 3rem;
+}
+
+.owner-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.owner-header h1 {
+  margin: 0 0 0.3rem;
+  color: #111827;
+}
+
+.owner-header p {
+  margin: 0;
+  color: #6b7280;
+}
+
+.owner-profile-link {
+  background: #3b5bdb;
+  color: #ffffff;
+  text-decoration: none;
+  padding: 0.65rem 1.15rem;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.owner-error {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  padding: 0.85rem 1rem;
+  border-radius: 8px;
+  margin-bottom: 1.25rem;
+}
+
+.owner-stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.owner-stat-card {
+  background: #ffffff;
+  padding: 1.25rem 1.5rem;
+  border-radius: 12px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.owner-stat-label {
+  font-size: 0.9rem;
+  color: #6b7280;
+}
+
+.owner-stat-value {
+  font-size: 1.9rem;
+  color: #3b5bdb;
+}
+
+.owner-card {
+  background: #ffffff;
+  padding: 1.5rem;
+  border-radius: 14px;
+  box-shadow: 0 4px 16px rgba(15, 23, 42, 0.06);
+  margin-bottom: 1.5rem;
+}
+
+.owner-card h2 {
+  margin: 0 0 1rem;
+  font-size: 1.2rem;
+  color: #111827;
+}
+
+.owner-stores-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 1rem;
+}
+
+.owner-store-box {
+  border: 1px solid #e5e7eb;
+  border-radius: 10px;
+  padding: 1rem;
+  background: #f9fafb;
+}
+
+.owner-store-box h3 {
+  margin: 0 0 0.4rem;
+  color: #111827;
+}
+
+.owner-store-box p {
+  margin: 0.25rem 0;
+  color: #4b5563;
+  font-size: 0.9rem;
+}
+
+.owner-store-badge {
+  display: inline-block;
+  margin-top: 0.6rem;
+  background: #eef2ff;
+  color: #3b5bdb;
+  font-weight: 600;
+  padding: 0.3rem 0.7rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.owner-table-wrapper {
+  overflow-x: auto;
+}
+
+.owner-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.owner-table th,
+.owner-table td {
+  padding: 0.8rem 0.75rem;
+  text-align: left;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.owner-table th {
+  background: #f9fafb;
+  color: #374151;
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+
+.owner-table th:hover {
+  background: #eef2ff;
+}
+
+.owner-stars {
+  color: #f59e0b;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.owner-empty,
+.owner-empty-cell {
+  text-align: center;
+  color: #6b7280;
+  padding: 1.5rem !important;
+}

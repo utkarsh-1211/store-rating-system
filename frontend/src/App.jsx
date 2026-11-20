@@ -3,12 +3,14 @@ import { AuthProvider } from "./context/AuthContext";
 import Navbar from "./components/Navbar";
 import ProtectedRoute from "./components/ProtectedRoute";
 import AdminRoute from "./components/AdminRoute";
+import OwnerRoute from "./components/OwnerRoute";
 import Home from "./Home";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Profile from "./pages/Profile";
 import StoreDetails from "./pages/StoreDetails";
 import AdminDashboard from "./pages/AdminDashboard";
+import OwnerDashboard from "./pages/OwnerDashboard";
 
 function App() {
   return (
@@ -34,6 +36,14 @@ function App() {
               <AdminRoute>
                 <AdminDashboard />
               </AdminRoute>
+            }
+          />
+          <Route
+            path="/owner"
+            element={
+              <OwnerRoute>
+                <OwnerDashboard />
+              </OwnerRoute>
             }
           />
         </Routes>
