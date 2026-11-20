@@ -96,6 +96,14 @@ function Profile() {
           >
             Back to Home
           </button>
+          {user.role === "ADMIN" && (
+            <button
+              className="profile-logout-btn"
+              onClick={() => navigate("/admin")}
+            >
+              Admin Dashboard
+            </button>
+          )}
           <button
             className="profile-logout-btn"
             onClick={handleLogout}
@@ -105,7 +113,6 @@ function Profile() {
         </div>
       </div>
 
-      {/* User's Submitted Ratings History */}
       <div className="my-ratings-card">
         <h3>My Reviews ({myRatings.length})</h3>
 
